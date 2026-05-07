@@ -5,7 +5,8 @@ library(dplyr)
 library(tidyr)
 library(sf)
 
-# ── Data ──────────────────────────────────────────────────────────────────────
+
+# ── Load Data -----
 
 non_co2_data <- readr::read_csv("non_co2_data.csv", show_col_types = FALSE)
 
@@ -13,7 +14,7 @@ non_co2_data <- readr::read_csv("non_co2_data.csv", show_col_types = FALSE)
 non_co2_data <- non_co2_data |>
   rename(iso3 = region)
 
-# ── Sector / subsector structure ──────────────────────────────────────────────
+# ── Sector / subsector structure -----
 
 sector_meta <- list(
   Agriculture = list(
@@ -74,7 +75,7 @@ sector_colors <- sapply(sector_meta, `[[`, "color")
 world_geojson_url <-
   "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Helpers -----
 
 # Top-level sector pie (optionally filtered to selected countries)
 get_sector_pie <- function(selected_countries = NULL) {
@@ -101,7 +102,7 @@ get_subsector_pie <- function(sector_name, selected_countries = NULL) {
   ) |> filter(total > 0)
 }
 
-# ── UI ────────────────────────────────────────────────────────────────────────
+# ── UI -----
 
 ui <- fluidPage(
   tags$head(
@@ -301,7 +302,7 @@ ui <- fluidPage(
   )
 )
 
-# ── Server ────────────────────────────────────────────────────────────────────
+# ── Server -----
 
 server <- function(input, output, session) {
 
@@ -340,14 +341,14 @@ server <- function(input, output, session) {
       mutate(is_selected = NAME %in% rv$selected_countries)
   })
 
-  # ── Base map ──
+  ## ── Base map -----
   output$map_out <- renderLeaflet({
     leaflet(options = leafletOptions(zoomControl = TRUE)) |>
       addProviderTiles(providers$CartoDB.Positron) |>
       setView(lng = 10, lat = 20, zoom = 2)
   })
 
-  # ── Choropleth update ──
+  ## ── Choropleth update -----
   observe({
     req(map_joined())
     mj <- map_joined()
@@ -391,7 +392,7 @@ server <- function(input, output, session) {
       )
   })
 
-  # ── Map click ──
+  ## ── Map click -----
   observeEvent(input$map_out_shape_click, {
     cname <- input$map_out_shape_click$id
     if (is.null(cname) || cname == "") return()
@@ -413,7 +414,7 @@ server <- function(input, output, session) {
     rv$drilldown_sector   <- NULL
   })
 
-  # ── Pie data ──
+  ## ── Pie data -----
   pie_df <- reactive({
     sel <- if (length(rv$selected_countries) > 0) rv$selected_countries else NULL
 
@@ -432,7 +433,7 @@ server <- function(input, output, session) {
     }
   })
 
-  # ── Pie chart ──
+  ## ── Pie chart -----
   output$pie_out <- renderPlotly({
     df     <- pie_df()
     is_top <- is.null(rv$drilldown_sector)
@@ -469,7 +470,7 @@ server <- function(input, output, session) {
     p
   })
 
-  # ── Pie click → drilldown ──
+  ## ── Pie click → drilldown -----
   observeEvent(event_data("plotly_click", source = "pie_click"), {
     click <- event_data("plotly_click", source = "pie_click")
     if (is.null(click)) return()
@@ -483,7 +484,7 @@ server <- function(input, output, session) {
     rv$drilldown_sector <- NULL
   })
 
-  # ── Pie header right ──
+  ## ── Pie header right -----
   output$pie_header_right <- renderUI({
     sel_label <- if (length(rv$selected_countries) == 0) "World total" else
       paste(rv$selected_countries, collapse = " + ")
@@ -498,7 +499,7 @@ server <- function(input, output, session) {
     }
   })
 
-  # ── Summary bar ──
+  ## ── Summary bar -----
   output$summary_bar <- renderUI({
     df  <- map_totals()
     sel <- rv$selected_countries
@@ -530,7 +531,7 @@ server <- function(input, output, session) {
     )
   })
 
-  # ── Country chips ──
+  ## ── Country chips -----
   output$selected_chips <- renderUI({
     if (length(rv$selected_countries) == 0) {
       div(style = "color:#aab0c4; font-style:italic; font-size:11px;",
